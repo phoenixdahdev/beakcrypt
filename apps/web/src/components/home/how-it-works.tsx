@@ -1,4 +1,6 @@
-const steps = [
+import Step from "./step";
+
+const steps: { step: string; title: string; desc: string; code: string }[] = [
   {
     step: "1",
     title: "Connect your project",
@@ -41,19 +43,7 @@ export default function HowItWorks() {
 
         <div className="grid gap-8 md:grid-cols-3">
           {steps.map((item) => (
-            <div key={item.step}>
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded border border-[#5eead4]/50 text-sm font-medium text-[#5eead4]">
-                  {item.step}
-                </div>
-                <div className="h-px flex-1 bg-white/10" />
-              </div>
-              <h3 className="mb-2 font-medium">{item.title}</h3>
-              <p className="mb-4 text-sm text-white/50">{item.desc}</p>
-              <div className="rounded border border-white/5 bg-[#09090b] px-4 py-2.5 font-mono text-sm text-white/60">
-                <span className="text-[#5eead4]">$</span> {item.code}
-              </div>
-            </div>
+            <Step key={item.step} item={item} />
           ))}
         </div>
       </div>
