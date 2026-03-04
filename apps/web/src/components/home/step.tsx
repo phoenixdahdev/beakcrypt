@@ -32,9 +32,9 @@ const Step = ({
           className="flex h-8 w-8 items-center justify-center rounded border border-white/5 transition-all hover:border-[#5eead4]/50 text-sm cursor-pointer"
         >
           {copied ? (
-            <Check aria-hidden="true" color="#5eead4" />
+            <Check aria-hidden="true" color="#5eead4" className="size-4" />
           ) : (
-            <Copy aria-hidden="true" color="#5eead4" />
+            <Copy aria-hidden="true" color="#5eead4" className="size-4" />
           )}
         </button>
       </div>
