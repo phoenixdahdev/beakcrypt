@@ -8,7 +8,6 @@
         "fallback": "beakcrypt.com"
       }
     },
-    
     "beakcrypt-docs": {
       "packageName": "@beakcrypt/docs",
       "development": {
