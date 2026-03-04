@@ -1,3 +1,4 @@
+import { env } from "~/env";
 import Link from "next/link";
 import { Button } from "@beakcrypt/ui/components/button";
 
@@ -20,7 +21,9 @@ export default function Nav() {
             <Link href="#how-it-works">How it Works</Link>
           </Button>
           <Button variant="link" size="sm" asChild>
-            <Link href="/docs">Docs</Link>
+            <a href={`${env.SITE_URL}/docs`} target="_blank" rel="noreferrer">
+              Docs
+            </a>
           </Button>
         </div>
 

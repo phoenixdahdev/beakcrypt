@@ -1,3 +1,4 @@
+import { env } from "~/env";
 import Link from "next/link";
 import { Button } from "@beakcrypt/ui/components/button";
 
@@ -24,14 +25,14 @@ export default function CallToAction() {
                 Start for Free
               </Button>
             </Link>
-            <Link href="/docs">
+            <a href={`${env.SITE_URL}/docs`} target="_blank" rel="noreferrer">
               <Button
                 variant="outline"
                 className="h-11 border-white/10 bg-transparent px-7 text-sm text-white/70 hover:bg-white/5"
               >
                 Read the Docs
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { env } from "~/env";
 import Link from "next/link";
 import AnimatedTerminal from "./animated-terminal";
 import AnimatedPlatform from "./animated-platform";
@@ -26,7 +27,13 @@ export default function Hero() {
                 </Button>
               </Link>
               <Button variant="outline">
-                <Link href="/docs">Read the Docs</Link>
+                <a
+                  href={`${env.SITE_URL}/docs`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Read the Docs
+                </a>
               </Button>
             </div>
           </div>

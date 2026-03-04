@@ -1,3 +1,4 @@
+import { env } from "~/env";
 import Link from "next/link";
 
 const footerLinks = [
@@ -12,9 +13,9 @@ const footerLinks = [
   {
     title: "Resources",
     links: [
-      { label: "CLI Guide", href: "/docs/cli" },
+      { label: "CLI Guide", href: `${env.SITE_URL}/docs/cli` },
       { label: "Changelog", href: "/changelog" },
-      { label: "Documentation", href: "/docs" },
+      { label: "Documentation", href: `${env.SITE_URL}/docs` },
     ],
   },
   {
