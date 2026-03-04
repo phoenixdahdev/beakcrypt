@@ -26,14 +26,8 @@ export default function Hero() {
                   Start for Free
                 </Button>
               </Link>
-              <Button variant="outline">
-                <a
-                  href={`${env.SITE_URL}/docs`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Read the Docs
-                </a>
+              <Button variant="outline" asChild>
+                <a href={`${env.SITE_URL}/docs`}>Read the Docs</a>
               </Button>
             </div>
           </div>

@@ -54,15 +54,25 @@ export default function Footer() {
                   {col.title}
                 </div>
                 <div className="flex flex-col gap-2">
-                  {col.links.map((link) => (
-                    <Link
-                      key={link.label}
-                      href={link.href}
-                      className="text-sm text-white/50 transition-colors hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  {col.links.map((link) =>
+                    link.href.startsWith("http") ? (
+                      <a
+                        key={link.label}
+                        href={link.href}
+                        className="text-sm text-white/50 transition-colors hover:text-white"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        key={link.label}
+                        href={link.href}
+                        className="text-sm text-white/50 transition-colors hover:text-white"
+                      >
+                        {link.label}
+                      </Link>
+                    ),
+                  )}
                 </div>
               </div>
             ))}

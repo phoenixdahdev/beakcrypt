@@ -21,9 +21,7 @@ export default function Nav() {
             <Link href="#how-it-works">How it Works</Link>
           </Button>
           <Button variant="link" size="sm" asChild>
-            <a href={`${env.SITE_URL}/docs`} target="_blank" rel="noreferrer">
-              Docs
-            </a>
+            <a href={`${env.SITE_URL}/docs`}>Docs</a>
           </Button>
         </div>
 
