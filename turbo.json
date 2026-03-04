@@ -26,7 +26,6 @@
         "CONVEX_DEPLOY_KEY",
         "BETTER_AUTH_SECRET",
         "SKIP_ENV_VALIDATION",
-        "BETTER_AUTH_API_KEY",
         "GITHUB_CLIENT_SECRET"
       ]
     },
