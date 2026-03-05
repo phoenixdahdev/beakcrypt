@@ -65,6 +65,7 @@ export const registerKey = mutation({
           .eq("userId", user._id)
           .eq("publicKey", args.publicKey),
       )
+      .filter((q) => q.neq(q.field("status"), "revoked"))
       .take(2);
 
     if (existingMatches.length > 1) {
@@ -662,7 +663,11 @@ export const revokeMyKey = mutation({
     const keyResult = await validateMyKey(ctx, userResult.data._id, args.keyId);
     if (isFailure(keyResult)) return keyResult;
 
-    await ctx.db.delete(args.keyId);
+    await ctx.db.patch(args.keyId, {
+      status: "revoked",
+      wrappedOrgKey: undefined,
+      updatedAt: Date.now(),
+    });
     return success(null);
   },
 });
@@ -724,7 +729,11 @@ export const revokeMySessionAndKey = mutation({
       );
     }
 
-    await ctx.db.delete(args.keyId);
+    await ctx.db.patch(args.keyId, {
+      status: "revoked",
+      wrappedOrgKey: undefined,
+      updatedAt: Date.now(),
+    });
     return success(null);
   },
 });

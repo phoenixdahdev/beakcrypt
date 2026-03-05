@@ -150,6 +150,23 @@ export const remove = mutation({
       );
     }
 
+    const memberKeys = await ctx.db
+      .query("memberKeys")
+      .withIndex("by_org_and_user", (q) =>
+        q.eq("orgId", membership.orgId).eq("userId", membership.userId),
+      )
+      .collect();
+
+    for (const key of memberKeys) {
+      if (key.status !== "revoked") {
+        await ctx.db.patch(key._id, {
+          status: "revoked",
+          wrappedOrgKey: undefined,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
     await ctx.db.delete(args.memberId);
 
     return success({ removed: true });
