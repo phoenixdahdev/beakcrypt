@@ -11,9 +11,11 @@ import * as output from "../lib/output";
 
 export async function pullCommand(
   file: string | undefined,
-  opts: { org?: string; project?: string; env?: string },
+  opts: { org?: string; project?: string; env?: string; output?: string },
 ): Promise<void> {
-  const filePath = resolve(file ?? ".env.local");
+  // --output flag takes precedence over the positional argument; both default to .env.local
+  const target = opts.output ?? file ?? ".env.local";
+  const filePath = resolve(target);
   const ctx = await resolveContext(opts);
 
   const spinner = ora("Pulling secrets...").start();
@@ -34,6 +36,6 @@ export async function pullCommand(
   spinner.stop();
 
   output.success(
-    `Pulled ${secrets.length} secret${secrets.length === 1 ? "" : "s"} to ${file ?? ".env.local"}`,
+    `Pulled ${secrets.length} secret${secrets.length === 1 ? "" : "s"} to ${filePath}`,
   );
 }

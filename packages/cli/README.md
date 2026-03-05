@@ -59,6 +59,21 @@ All sync commands accept these flags:
 -y, --yes                 Skip confirmation prompts (push, logout)
 ```
 
+`pull` also accepts:
+
+```
+--output <path>           Output file path including filename
+                          (overrides the positional [file] argument)
+```
+
+The destination can be specified as a positional argument or via `--output`. Both accept any path including the filename:
+
+```bash
+beakcrypt pull secrets/.env.development
+beakcrypt pull --output /home/user/projects/app/.env.local
+beakcrypt pull --output ../shared/.env -e staging
+```
+
 ### Secrets management
 
 ```
@@ -111,8 +126,14 @@ beakcrypt push .env.production -e production
 # Set individual secrets directly
 beakcrypt secrets set API_KEY=abc123 DATABASE_URL=postgres://...
 
-# Pull into a custom file
+# Pull into a custom file path (positional)
 beakcrypt pull .env.staging -e staging
+
+# Pull into a specific directory and filename (flag)
+beakcrypt pull --output config/.env.local
+
+# Pull staging secrets into a sibling directory
+beakcrypt pull --output ../frontend/.env -e staging
 
 # Reveal decrypted values in the terminal
 beakcrypt secrets list --reveal

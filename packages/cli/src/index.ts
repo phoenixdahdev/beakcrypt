@@ -84,10 +84,14 @@ program
 // Secret sync commands
 program
   .command("pull [file]")
-  .description("Pull secrets to a local .env file")
+  .description("Pull secrets to a local .env file (default: .env.local)")
   .option("-o, --org <slug>", "Organization slug")
   .option("-p, --project <name>", "Project name")
   .option("-e, --env <name>", "Environment name")
+  .option(
+    "--output <path>",
+    "Output file path including filename (overrides positional argument)",
+  )
   .action(async (file, opts) => {
     try {
       await pullCommand(file, opts);
