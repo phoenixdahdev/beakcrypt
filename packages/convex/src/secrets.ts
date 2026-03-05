@@ -19,7 +19,7 @@ async function requireEnvWriteAccess(
   if (isFailure(userResult)) return { ok: false as const, result: userResult };
 
   const environment = await ctx.db.get(environmentId);
-  if (!environment) {
+  if (!environment || environment.deletedAt !== undefined) {
     return {
       ok: false as const,
       result: failure(
@@ -76,7 +76,7 @@ export const list = query({
     if (isFailure(userResult)) return userResult;
 
     const environment = await ctx.db.get(args.environmentId);
-    if (!environment) {
+    if (!environment || environment.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "env:not_found",
@@ -109,6 +109,7 @@ export const list = query({
       .withIndex("by_environment", (q) =>
         q.eq("environmentId", args.environmentId),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     return success(secrets);
@@ -138,6 +139,7 @@ export const create = mutation({
       .withIndex("by_env_and_key", (q) =>
         q.eq("environmentId", args.environmentId).eq("key", args.key),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     if (existing) {
@@ -181,7 +183,7 @@ export const update = mutation({
     if (isFailure(userResult)) return userResult;
 
     const secret = await ctx.db.get(args.id);
-    if (!secret) {
+    if (!secret || secret.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "secret:not_found",
@@ -199,6 +201,7 @@ export const update = mutation({
         .withIndex("by_env_and_key", (q) =>
           q.eq("environmentId", secret.environmentId).eq("key", newKey),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .first();
 
       if (existing) {
@@ -240,7 +243,7 @@ export const remove = mutation({
     if (isFailure(userResult)) return userResult;
 
     const secret = await ctx.db.get(args.id);
-    if (!secret) {
+    if (!secret || secret.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "secret:not_found",
@@ -251,7 +254,7 @@ export const remove = mutation({
     const access = await requireEnvWriteAccess(ctx, secret.environmentId);
     if (!access.ok) return access.result;
 
-    await ctx.db.delete(args.id);
+    await ctx.db.patch(args.id, { deletedAt: Date.now() });
 
     return success({ deleted: true });
   },
@@ -270,10 +273,12 @@ export const removeAll = mutation({
       .withIndex("by_environment", (q) =>
         q.eq("environmentId", args.environmentId),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
+    const now = Date.now();
     for (const secret of secrets) {
-      await ctx.db.delete(secret._id);
+      await ctx.db.patch(secret._id, { deletedAt: now });
     }
 
     return success({ deleted: secrets.length });
@@ -313,6 +318,7 @@ export const bulkCreate = mutation({
         .withIndex("by_env_and_key", (q) =>
           q.eq("environmentId", args.environmentId).eq("key", secret.key),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .first();
 
       if (existing) {
@@ -400,6 +406,7 @@ export const syncFromEnvironment = mutation({
       .withIndex("by_environment", (q) =>
         q.eq("environmentId", args.sourceEnvironmentId),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     const results: SyncResult = {
@@ -414,6 +421,7 @@ export const syncFromEnvironment = mutation({
         .withIndex("by_env_and_key", (q) =>
           q.eq("environmentId", args.targetEnvironmentId).eq("key", secret.key),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .first();
 
       if (existing) {
@@ -473,6 +481,7 @@ export const listAllOrgSecrets = query({
         const secrets = await ctx.db
           .query("secrets")
           .withIndex("by_environment", (q) => q.eq("environmentId", env._id))
+          .filter((q) => q.eq(q.field("deletedAt"), undefined))
           .collect();
 
         for (const secret of secrets) {
