@@ -1062,6 +1062,7 @@ function EnvironmentSecrets({
                         onPaste={handlePaste}
                         placeholder="KEY_NAME"
                         className="h-8 font-mono text-sm"
+                        disabled={isPending}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -1082,6 +1083,7 @@ function EnvironmentSecrets({
                         onPaste={handlePaste}
                         placeholder="value"
                         className="h-8 font-mono text-sm"
+                        disabled={isPending}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -1119,6 +1121,7 @@ function EnvironmentSecrets({
                             setNewValue("");
                             setAddError("");
                           }}
+                          disabled={isPending}
                           title="Cancel"
                         >
                           <X className="size-3.5" />
@@ -1176,6 +1179,7 @@ function EnvironmentSecrets({
                             onChange={(e) => setEditKey(e.target.value)}
                             placeholder="KEY_NAME"
                             className="h-8 font-mono text-sm"
+                            disabled={editPending}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
@@ -1192,6 +1196,7 @@ function EnvironmentSecrets({
                             onChange={(e) => setEditValue(e.target.value)}
                             placeholder="value"
                             className="h-8 font-mono text-sm"
+                            disabled={editPending}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault();
@@ -1225,6 +1230,7 @@ function EnvironmentSecrets({
                               variant="ghost"
                               size="icon-xs"
                               onClick={handleEditCancel}
+                              disabled={editPending}
                               title="Cancel"
                             >
                               <X className="size-3.5" />
@@ -1322,6 +1328,7 @@ function EnvironmentSecrets({
                   size="sm"
                   variant="ghost"
                   onClick={() => setAddRows([])}
+                  disabled={isPending}
                 >
                   Discard
                 </Button>
@@ -1442,7 +1449,11 @@ function EnvironmentSecrets({
               )}
 
               <DialogFooter>
-                <Button variant="outline" onClick={handleSyncClose}>
+                <Button
+                  variant="outline"
+                  onClick={handleSyncClose}
+                  disabled={syncPending}
+                >
                   Cancel
                 </Button>
                 <Button
@@ -1523,7 +1534,11 @@ function EnvironmentSecrets({
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleDestructiveClose}>
+            <Button
+              variant="outline"
+              onClick={handleDestructiveClose}
+              disabled={destructivePending}
+            >
               Cancel
             </Button>
             <Button
