@@ -33,6 +33,7 @@ export const create = mutation({
       .withIndex("by_org_and_name", (q) =>
         q.eq("orgId", args.orgId).eq("name", args.name),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     if (existing) {
@@ -49,6 +50,7 @@ export const create = mutation({
         .withIndex("by_github_repo", (q) =>
           q.eq("githubRepoId", args.githubRepoId),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .first();
 
       if (existingRepo) {
@@ -108,6 +110,7 @@ export const getByName = query({
       .withIndex("by_org_and_name", (q) =>
         q.eq("orgId", args.orgId).eq("name", args.name),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     if (!project) {
@@ -152,6 +155,7 @@ export const getBySlugAndName = query({
       .withIndex("by_org_and_name", (q) =>
         q.eq("orgId", org._id).eq("name", args.name),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     if (!project) {
@@ -180,6 +184,7 @@ export const checkName = query({
       .withIndex("by_org_and_name", (q) =>
         q.eq("orgId", args.orgId).eq("name", args.name),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     return success(!!existing);
@@ -197,6 +202,7 @@ export const list = query({
     const projects = await ctx.db
       .query("projects")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     return success(projects);
@@ -229,6 +235,7 @@ export const update = mutation({
       .withIndex("by_org_and_name", (q) =>
         q.eq("orgId", project.orgId).eq("name", args.name),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     if (existing && existing._id !== args.id) {
@@ -285,6 +292,7 @@ export const linkRepo = mutation({
       .withIndex("by_github_repo", (q) =>
         q.eq("githubRepoId", args.githubRepoId),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     if (existingRepo && existingRepo._id !== args.id) {
@@ -378,22 +386,26 @@ export const remove = mutation({
     const environments = await ctx.db
       .query("environments")
       .withIndex("by_project", (q) => q.eq("projectId", args.id))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
+
+    const now = Date.now();
 
     for (const env of environments) {
       const secrets = await ctx.db
         .query("secrets")
         .withIndex("by_environment", (q) => q.eq("environmentId", env._id))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .collect();
 
       for (const secret of secrets) {
-        await ctx.db.delete(secret._id);
+        await ctx.db.patch(secret._id, { deletedAt: now });
       }
 
-      await ctx.db.delete(env._id);
+      await ctx.db.patch(env._id, { deletedAt: now });
     }
 
-    await ctx.db.delete(args.id);
+    await ctx.db.patch(args.id, { deletedAt: now });
 
     return success({ deleted: true });
   },

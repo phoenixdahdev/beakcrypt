@@ -109,6 +109,7 @@ export const list = query({
       .withIndex("by_environment", (q) =>
         q.eq("environmentId", args.environmentId),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     return success(secrets);
@@ -138,6 +139,7 @@ export const create = mutation({
       .withIndex("by_env_and_key", (q) =>
         q.eq("environmentId", args.environmentId).eq("key", args.key),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first();
 
     if (existing) {
@@ -199,6 +201,7 @@ export const update = mutation({
         .withIndex("by_env_and_key", (q) =>
           q.eq("environmentId", secret.environmentId).eq("key", newKey),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .first();
 
       if (existing) {
@@ -251,7 +254,7 @@ export const remove = mutation({
     const access = await requireEnvWriteAccess(ctx, secret.environmentId);
     if (!access.ok) return access.result;
 
-    await ctx.db.delete(args.id);
+    await ctx.db.patch(args.id, { deletedAt: Date.now() });
 
     return success({ deleted: true });
   },
@@ -270,10 +273,12 @@ export const removeAll = mutation({
       .withIndex("by_environment", (q) =>
         q.eq("environmentId", args.environmentId),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
+    const now = Date.now();
     for (const secret of secrets) {
-      await ctx.db.delete(secret._id);
+      await ctx.db.patch(secret._id, { deletedAt: now });
     }
 
     return success({ deleted: secrets.length });
@@ -313,6 +318,7 @@ export const bulkCreate = mutation({
         .withIndex("by_env_and_key", (q) =>
           q.eq("environmentId", args.environmentId).eq("key", secret.key),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .first();
 
       if (existing) {
@@ -400,6 +406,7 @@ export const syncFromEnvironment = mutation({
       .withIndex("by_environment", (q) =>
         q.eq("environmentId", args.sourceEnvironmentId),
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     const results: SyncResult = {
@@ -414,6 +421,7 @@ export const syncFromEnvironment = mutation({
         .withIndex("by_env_and_key", (q) =>
           q.eq("environmentId", args.targetEnvironmentId).eq("key", secret.key),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .first();
 
       if (existing) {
@@ -473,6 +481,7 @@ export const listAllOrgSecrets = query({
         const secrets = await ctx.db
           .query("secrets")
           .withIndex("by_environment", (q) => q.eq("environmentId", env._id))
+          .filter((q) => q.eq(q.field("deletedAt"), undefined))
           .collect();
 
         for (const secret of secrets) {
