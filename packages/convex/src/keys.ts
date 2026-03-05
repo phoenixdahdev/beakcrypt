@@ -152,6 +152,7 @@ export const registerKey = mutation({
         const allMembers = await ctx.db
           .query("organizationMembers")
           .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+          .filter((q) => q.eq(q.field("deletedAt"), undefined))
           .collect();
 
         const adminMembers = allMembers.filter(

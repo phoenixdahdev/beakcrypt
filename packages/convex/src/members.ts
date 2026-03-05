@@ -32,6 +32,7 @@ export const list = query({
     const memberships = await ctx.db
       .query("organizationMembers")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     const members: MemberWithUser[] = [];
@@ -75,7 +76,7 @@ export const updateRole = mutation({
   },
   handler: async (ctx, args): Promise<Result<Doc<"organizationMembers">>> => {
     const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
+    if (!membership || membership.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "member:not_found",
@@ -130,7 +131,7 @@ export const remove = mutation({
     if (isFailure(userResult)) return userResult;
 
     const membership = await ctx.db.get(args.memberId);
-    if (!membership) {
+    if (!membership || membership.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "member:not_found",
@@ -167,7 +168,10 @@ export const remove = mutation({
       }
     }
 
-    await ctx.db.delete(args.memberId);
+    await ctx.db.patch(args.memberId, {
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
 
     return success({ removed: true });
   },
