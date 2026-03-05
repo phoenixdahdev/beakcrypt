@@ -9,7 +9,6 @@ export const env = createEnv({
     SITE_URL: z.url(),
     CONVEX_URL: z.url(),
     CONVEX_SITE_URL: z.url(),
-    BETTER_AUTH_URL: z.url(),
     GITHUB_CLIENT_ID: z.string(),
     CONVEX_DEPLOYMENT: z.string(),
     BETTER_AUTH_SECRET: z.string(),

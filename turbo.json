@@ -10,7 +10,6 @@
         "NODE_ENV",
         "SITE_URL",
         "CONVEX_URL",
-        "BETTER_AUTH_URL",
         "CONVEX_SITE_URL",
         "GITHUB_CLIENT_ID",
         "CONVEX_DEPLOYMENT",
