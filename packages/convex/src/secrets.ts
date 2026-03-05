@@ -19,7 +19,7 @@ async function requireEnvWriteAccess(
   if (isFailure(userResult)) return { ok: false as const, result: userResult };
 
   const environment = await ctx.db.get(environmentId);
-  if (!environment) {
+  if (!environment || environment.deletedAt !== undefined) {
     return {
       ok: false as const,
       result: failure(
@@ -76,7 +76,7 @@ export const list = query({
     if (isFailure(userResult)) return userResult;
 
     const environment = await ctx.db.get(args.environmentId);
-    if (!environment) {
+    if (!environment || environment.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "env:not_found",
@@ -183,7 +183,7 @@ export const update = mutation({
     if (isFailure(userResult)) return userResult;
 
     const secret = await ctx.db.get(args.id);
-    if (!secret) {
+    if (!secret || secret.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "secret:not_found",
@@ -243,7 +243,7 @@ export const remove = mutation({
     if (isFailure(userResult)) return userResult;
 
     const secret = await ctx.db.get(args.id);
-    if (!secret) {
+    if (!secret || secret.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "secret:not_found",

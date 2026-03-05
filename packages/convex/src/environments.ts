@@ -131,6 +131,7 @@ export const ensurePersonalLocal = mutation({
           .withIndex("by_environment", (q) =>
             q.eq("environmentId", existing._id),
           )
+          .filter((q) => q.eq(q.field("deletedAt"), undefined))
           .first();
 
         if (!existingSecrets) {
@@ -251,7 +252,7 @@ export const update = mutation({
     if (isFailure(userResult)) return userResult;
 
     const environment = await ctx.db.get(args.id);
-    if (!environment) {
+    if (!environment || environment.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "env:not_found",
@@ -355,7 +356,7 @@ export const remove = mutation({
     if (isFailure(userResult)) return userResult;
 
     const environment = await ctx.db.get(args.id);
-    if (!environment) {
+    if (!environment || environment.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "env:not_found",

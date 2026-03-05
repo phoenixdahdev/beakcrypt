@@ -219,7 +219,7 @@ export const update = mutation({
     if (isFailure(userResult)) return userResult;
 
     const project = await ctx.db.get(args.id);
-    if (!project) {
+    if (!project || project.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "project:not_found",
@@ -276,7 +276,7 @@ export const linkRepo = mutation({
     if (isFailure(userResult)) return userResult;
 
     const project = await ctx.db.get(args.id);
-    if (!project) {
+    if (!project || project.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "project:not_found",
@@ -332,7 +332,7 @@ export const unlinkRepo = mutation({
     if (isFailure(userResult)) return userResult;
 
     const project = await ctx.db.get(args.id);
-    if (!project) {
+    if (!project || project.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "project:not_found",
@@ -372,7 +372,7 @@ export const remove = mutation({
     if (isFailure(userResult)) return userResult;
 
     const project = await ctx.db.get(args.id);
-    if (!project) {
+    if (!project || project.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "project:not_found",
