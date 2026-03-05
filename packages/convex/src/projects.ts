@@ -399,13 +399,22 @@ export const remove = mutation({
         .collect();
 
       for (const secret of secrets) {
-        await ctx.db.patch(secret._id, { deletedAt: now });
+        await ctx.db.patch(secret._id, {
+          deletedAt: now,
+          updatedAt: now,
+        });
       }
 
-      await ctx.db.patch(env._id, { deletedAt: now });
+      await ctx.db.patch(env._id, {
+        deletedAt: now,
+        updatedAt: now,
+      });
     }
 
-    await ctx.db.patch(args.id, { deletedAt: now });
+    await ctx.db.patch(args.id, {
+      deletedAt: now,
+      updatedAt: now,
+    });
 
     return success({ deleted: true });
   },

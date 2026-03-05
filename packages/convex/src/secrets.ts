@@ -254,7 +254,10 @@ export const remove = mutation({
     const access = await requireEnvWriteAccess(ctx, secret.environmentId);
     if (!access.ok) return access.result;
 
-    await ctx.db.patch(args.id, { deletedAt: Date.now() });
+    await ctx.db.patch(args.id, {
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
 
     return success({ deleted: true });
   },
@@ -278,7 +281,10 @@ export const removeAll = mutation({
 
     const now = Date.now();
     for (const secret of secrets) {
-      await ctx.db.patch(secret._id, { deletedAt: now });
+      await ctx.db.patch(secret._id, {
+        deletedAt: now,
+        updatedAt: now,
+      });
     }
 
     return success({ deleted: secrets.length });
