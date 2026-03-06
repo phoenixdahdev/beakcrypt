@@ -36,6 +36,8 @@ beakcrypt logout          Log out and remove local credentials
 beakcrypt whoami          Show the currently logged-in user
 ```
 
+`logout` accepts `-y, --yes` to skip the confirmation prompt.
+
 ### Project linking
 
 ```
@@ -56,8 +58,9 @@ All sync commands accept these flags:
 -o, --org <slug>          Organization slug
 -p, --project <name>      Project name
 -e, --env <name>          Environment name
--y, --yes                 Skip confirmation prompts (push, logout)
 ```
+
+`push` also accepts `-y, --yes` to skip the confirmation prompt.
 
 `pull` also accepts:
 
@@ -84,7 +87,8 @@ beakcrypt secrets remove <KEY...>       Remove secrets by key
 beakcrypt secrets clear                 Delete all secrets in an environment
 ```
 
-All `secrets` subcommands accept `-o`, `-p`, `-e` flags.
+All `secrets` subcommands accept `-o`, `-p`, `-e` flags.  
+`secrets clear` also accepts `-y, --yes` to skip the confirmation prompt.
 
 ### Organizations
 
