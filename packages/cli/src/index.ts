@@ -13,6 +13,11 @@ import { secretsRemoveCommand } from "./commands/secrets/remove";
 import { secretsClearCommand } from "./commands/secrets/clear";
 import { orgListCommand } from "./commands/org/list";
 import { envListCommand } from "./commands/env/list";
+import { envCreateCommand } from "./commands/env/create";
+import { envRemoveCommand } from "./commands/env/remove";
+import { projectListCommand } from "./commands/project/list";
+import { projectCreateCommand } from "./commands/project/create";
+import { projectRemoveCommand } from "./commands/project/remove";
 import { interactiveMode } from "./interactive-mode";
 
 const program = new Command();
@@ -79,10 +84,14 @@ program
 // Secret sync commands
 program
   .command("pull [file]")
-  .description("Pull secrets to a local .env file")
+  .description("Pull secrets to a local .env file (default: .env.local)")
   .option("-o, --org <slug>", "Organization slug")
   .option("-p, --project <name>", "Project name")
   .option("-e, --env <name>", "Environment name")
+  .option(
+    "--output <path>",
+    "Output file path including filename (overrides positional argument)",
+  )
   .action(async (file, opts) => {
     try {
       await pullCommand(file, opts);
@@ -126,10 +135,11 @@ const secrets = program.command("secrets").description("Manage secrets");
 
 secrets
   .command("list")
-  .description("List secrets (values masked)")
+  .description("List secrets (values masked by default)")
   .option("-o, --org <slug>", "Organization slug")
   .option("-p, --project <name>", "Project name")
   .option("-e, --env <name>", "Environment name")
+  .option("--reveal", "Decrypt and print plaintext values")
   .action(async (opts) => {
     try {
       await secretsListCommand(opts);
@@ -206,6 +216,73 @@ env
   .action(async (opts) => {
     try {
       await envListCommand(opts);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+
+env
+  .command("create <name>")
+  .description("Create a new environment in the linked project")
+  .option("-o, --org <slug>", "Organization slug")
+  .option("-p, --project <name>", "Project name")
+  .action(async (name, opts) => {
+    try {
+      await envCreateCommand(name, opts);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+
+env
+  .command("remove <name>")
+  .description("Delete an environment and all its secrets")
+  .option("-o, --org <slug>", "Organization slug")
+  .option("-p, --project <name>", "Project name")
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(async (name, opts) => {
+    try {
+      await envRemoveCommand(name, opts);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+
+// Project subcommands
+const project = program.command("project").description("Manage projects");
+
+project
+  .command("list")
+  .description("List projects in an organization")
+  .option("-o, --org <slug>", "Organization slug (required)")
+  .action(async (opts) => {
+    try {
+      await projectListCommand(opts);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+
+project
+  .command("create <name>")
+  .description("Create a new project in an organization")
+  .option("-o, --org <slug>", "Organization slug (required)")
+  .action(async (name, opts) => {
+    try {
+      await projectCreateCommand(name, opts);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+
+project
+  .command("remove <name>")
+  .description("Delete a project and all its environments and secrets")
+  .option("-o, --org <slug>", "Organization slug (required)")
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(async (name, opts) => {
+    try {
+      await projectRemoveCommand(name, opts);
     } catch (err) {
       handleError(err);
     }

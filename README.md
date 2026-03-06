@@ -58,24 +58,26 @@ Tired of pasting `.env` files into Slack? Sending secrets over email? Beakcrypt 
 > 📹 **Demo video coming soon.**
 
 ```bash
-# Initialise a vault for your project
-$ beakcrypt init
-→ Project detected: acme-app
-✓ Vault created
+# Log in with GitHub OAuth
+$ beakcrypt login
+✓ Logged in as jane@acme.com
+
+# Link this directory to a project
+$ beakcrypt link
+✓ Linked to acme/api (development)
 
 # Push your local secrets — encrypted before upload
-$ beakcrypt push .env.local
+$ beakcrypt push
 → Encrypting 12 variables...
 ✓ Synced to vault
 
-# A new teammate pulls the secrets instantly
+# A teammate pulls the secrets on their machine
 $ beakcrypt pull
 → Fetching from vault...
 ✓ Written to .env.local
 
-# Invite your team
-$ beakcrypt invite teammate@acme.com
-✓ Invitation sent
+# Inject secrets directly into any command
+$ beakcrypt run -- npm run dev
 ```
 
 No more `.env` files in Slack. No more "which version of the key is correct?". **One vault. One source of truth.**
@@ -92,7 +94,9 @@ beakcrypt/
 │   ├── web/              # Next.js app — beakcrypt.com
 │   └── docs/             # Documentation site (Fumadocs)
 ├── packages/
+│   ├── cli/              # CLI tool — published as `beakcrypt` on npm
 │   ├── convex/           # Convex backend — schema, auth, API
+│   ├── crypto/           # Shared E2EE primitives (RSA-4096, AES-256-GCM)
 │   ├── shared/           # Shared types and utilities
 │   ├── ui/               # Shared UI component library
 │   ├── transactional/    # Transactional email templates

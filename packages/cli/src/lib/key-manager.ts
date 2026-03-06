@@ -100,6 +100,8 @@ async function registerNewDevice(orgId: string): Promise<string> {
   return await waitForApproval(orgId, stored);
 }
 
+const APPROVAL_TIMEOUT_MS = 60_000;
+
 async function waitForApproval(
   orgId: string,
   stored: StoredKeyData,
@@ -128,7 +130,9 @@ async function waitForApproval(
   const spinner = ora("Waiting for device to be approved...").start();
   spinner.indent = 2;
 
-  while (true) {
+  const deadline = Date.now() + APPROVAL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 5000));
 
     const result = await query(api.keys.getMyKey, {
@@ -152,4 +156,9 @@ async function waitForApproval(
       throw new Error("Device key was revoked. Re-run `beakcrypt login`.");
     }
   }
+
+  spinner.fail("Timed out waiting for device approval (1 minute).");
+  throw new Error(
+    "Device approval timed out. Ask an admin to approve your device, then re-run the command.",
+  );
 }
