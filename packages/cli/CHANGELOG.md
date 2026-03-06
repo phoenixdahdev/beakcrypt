@@ -1,5 +1,11 @@
 # beakcrypt
 
+## 0.0.5
+
+### Patch Changes
+
+- 2cc0a98: update cli with extra commands and features
+
 ## 0.0.4
 
 ### Patch Changes
