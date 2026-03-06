@@ -65,6 +65,7 @@ export const registerKey = mutation({
           .eq("userId", user._id)
           .eq("publicKey", args.publicKey),
       )
+      .filter((q) => q.neq(q.field("status"), "revoked"))
       .take(2);
 
     if (existingMatches.length > 1) {
@@ -135,6 +136,7 @@ export const registerKey = mutation({
         .withIndex("by_org_and_user", (q) =>
           q.eq("orgId", args.orgId).eq("userId", user._id),
         )
+        .filter((q) => q.neq(q.field("status"), "revoked"))
         .collect();
 
       const otherKeys = existingKeys.filter((k) => k._id !== keyId);
@@ -151,6 +153,7 @@ export const registerKey = mutation({
         const allMembers = await ctx.db
           .query("organizationMembers")
           .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+          .filter((q) => q.eq(q.field("deletedAt"), undefined))
           .collect();
 
         const adminMembers = allMembers.filter(
@@ -331,6 +334,7 @@ export const getMyKey = query({
           .eq("userId", userResult.data._id)
           .eq("publicKey", args.publicKey),
       )
+      .filter((q) => q.neq(q.field("status"), "revoked"))
       .take(2);
 
     if (matches.length > 1) {
@@ -519,6 +523,7 @@ export const listMySessions = query({
       .withIndex("by_org_and_user", (q) =>
         q.eq("orgId", args.orgId).eq("userId", userResult.data._id),
       )
+      .filter((q) => q.neq(q.field("status"), "revoked"))
       .collect();
 
     return success(keys);
@@ -610,6 +615,14 @@ export const updateKeySessionToken = mutation({
       );
     }
 
+    if (key.status === "revoked") {
+      return failure(
+        HttpStatus.BAD_REQUEST,
+        "key:already_revoked",
+        "Cannot update a revoked key",
+      );
+    }
+
     if (key.sessionToken === args.sessionToken) {
       return success(null);
     }
@@ -662,7 +675,11 @@ export const revokeMyKey = mutation({
     const keyResult = await validateMyKey(ctx, userResult.data._id, args.keyId);
     if (isFailure(keyResult)) return keyResult;
 
-    await ctx.db.delete(args.keyId);
+    await ctx.db.patch(args.keyId, {
+      status: "revoked",
+      wrappedOrgKey: undefined,
+      updatedAt: Date.now(),
+    });
     return success(null);
   },
 });
@@ -724,7 +741,11 @@ export const revokeMySessionAndKey = mutation({
       );
     }
 
-    await ctx.db.delete(args.keyId);
+    await ctx.db.patch(args.keyId, {
+      status: "revoked",
+      wrappedOrgKey: undefined,
+      updatedAt: Date.now(),
+    });
     return success(null);
   },
 });

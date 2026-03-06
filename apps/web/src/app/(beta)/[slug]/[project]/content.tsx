@@ -25,6 +25,7 @@ import {
   ShieldAlert,
   Lock,
   RotateCcw,
+  Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { SidebarTrigger } from "@beakcrypt/ui/components/sidebar";
@@ -408,6 +409,7 @@ function EnvironmentSecrets({
   const secretsResult = useQuery(api.secrets.list, { environmentId });
   const createMutation = useMutation(api.secrets.create);
   const bulkCreateMutation = useMutation(api.secrets.bulkCreate);
+  const updateMutation = useMutation(api.secrets.update);
   const deleteMutation = useMutation(api.secrets.remove);
   const removeAllMutation = useMutation(api.secrets.removeAll);
   const deleteEnvMutation = useMutation(api.environments.remove);
@@ -430,6 +432,12 @@ function EnvironmentSecrets({
   const [newValue, setNewValue] = useState("");
   const [addError, setAddError] = useState("");
   const keyInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingId, setEditingId] = useState<Id<"secrets"> | null>(null);
+  const [editKey, setEditKey] = useState("");
+  const [editValue, setEditValue] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editPending, startEditTransition] = useTransition();
 
   const [syncOpen, setSyncOpen] = useState(false);
   const [syncSourceId, setSyncSourceId] = useState<Id<"environments"> | null>(
@@ -558,6 +566,64 @@ function EnvironmentSecrets({
         setDeletingId(null);
       }
     });
+  };
+
+  const handleEditStart = async (secret: Doc<"secrets">) => {
+    setEditingId(secret._id);
+    setEditKey(secret.key);
+    setEditError("");
+    if (orgKey) {
+      try {
+        const decrypted =
+          decryptedValues[secret._id] ??
+          (await decryptSecret(secret.encryptedValue, orgKey));
+        setDecryptedValues((prev) => ({ ...prev, [secret._id]: decrypted }));
+        setEditValue(decrypted);
+      } catch {
+        setEditValue("");
+      }
+    } else {
+      setEditValue("");
+    }
+  };
+
+  const handleEditSave = (id: Id<"secrets">) => {
+    if (!editKey.trim()) {
+      setEditError("Key is required");
+      return;
+    }
+    if (!orgKey) {
+      setEditError("Encryption key not available");
+      return;
+    }
+    setEditError("");
+    startEditTransition(async () => {
+      try {
+        const encrypted = await encryptSecret(editValue, orgKey);
+        const result = await updateMutation({
+          id,
+          key: editKey.trim().toUpperCase(),
+          encryptedValue: encrypted,
+        });
+        if (isFailure(result)) {
+          setEditError(result.error);
+          return;
+        }
+        setDecryptedValues((prev) => ({ ...prev, [id]: editValue }));
+        setEditingId(null);
+        setEditKey("");
+        setEditValue("");
+      } catch {
+        setEditError("Something went wrong.");
+      }
+    });
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditKey("");
+    setEditValue("");
+    setEditError("");
   };
 
   const handlePaste = useCallback(
@@ -996,6 +1062,7 @@ function EnvironmentSecrets({
                         onPaste={handlePaste}
                         placeholder="KEY_NAME"
                         className="h-8 font-mono text-sm"
+                        disabled={isPending}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -1016,6 +1083,7 @@ function EnvironmentSecrets({
                         onPaste={handlePaste}
                         placeholder="value"
                         className="h-8 font-mono text-sm"
+                        disabled={isPending}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -1053,6 +1121,7 @@ function EnvironmentSecrets({
                             setNewValue("");
                             setAddError("");
                           }}
+                          disabled={isPending}
                           title="Cancel"
                         >
                           <X className="size-3.5" />
@@ -1099,6 +1168,78 @@ function EnvironmentSecrets({
                   const isRevealed = revealedIds.has(secret._id);
                   const isDeleting = deletingId === secret._id;
                   const isCopied = copiedId === secret._id;
+                  const isEditing = editingId === secret._id;
+
+                  if (isEditing) {
+                    return (
+                      <TableRow key={secret._id} className="bg-muted/30">
+                        <TableCell>
+                          <Input
+                            value={editKey}
+                            onChange={(e) => setEditKey(e.target.value)}
+                            placeholder="KEY_NAME"
+                            className="h-8 font-mono text-sm"
+                            disabled={editPending}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleEditSave(secret._id);
+                              }
+                              if (e.key === "Escape") handleEditCancel();
+                            }}
+                            autoFocus
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            placeholder="value"
+                            className="h-8 font-mono text-sm"
+                            disabled={editPending}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleEditSave(secret._id);
+                              }
+                              if (e.key === "Escape") handleEditCancel();
+                            }}
+                          />
+                          {editError && (
+                            <p className="mt-1 text-xs text-red-400">
+                              {editError}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => handleEditSave(secret._id)}
+                              disabled={editPending || !editKey.trim()}
+                              title="Save"
+                            >
+                              {editPending ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : (
+                                <Check className="size-3.5 text-emerald-500" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={handleEditCancel}
+                              disabled={editPending}
+                              title="Cancel"
+                            >
+                              <X className="size-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
 
                   return (
                     <TableRow
@@ -1148,7 +1289,16 @@ function EnvironmentSecrets({
                           <Button
                             variant="ghost"
                             size="icon-xs"
-                            disabled={isDeleting}
+                            onClick={() => handleEditStart(secret)}
+                            disabled={isDeleting || editingId !== null}
+                            title="Edit secret"
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            disabled={isDeleting || editingId !== null}
                             onClick={() => handleDelete(secret._id)}
                             className="text-destructive hover:text-destructive"
                             title="Delete secret"
@@ -1178,6 +1328,7 @@ function EnvironmentSecrets({
                   size="sm"
                   variant="ghost"
                   onClick={() => setAddRows([])}
+                  disabled={isPending}
                 >
                   Discard
                 </Button>
@@ -1298,7 +1449,11 @@ function EnvironmentSecrets({
               )}
 
               <DialogFooter>
-                <Button variant="outline" onClick={handleSyncClose}>
+                <Button
+                  variant="outline"
+                  onClick={handleSyncClose}
+                  disabled={syncPending}
+                >
                   Cancel
                 </Button>
                 <Button
@@ -1379,7 +1534,11 @@ function EnvironmentSecrets({
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleDestructiveClose}>
+            <Button
+              variant="outline"
+              onClick={handleDestructiveClose}
+              disabled={destructivePending}
+            >
               Cancel
             </Button>
             <Button

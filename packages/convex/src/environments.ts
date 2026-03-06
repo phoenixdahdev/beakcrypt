@@ -23,9 +23,12 @@ async function syncSecretsFromDev(
       q.eq("projectId", projectId).eq("name", "development"),
     )
     .filter((q) =>
-      q.or(
-        q.eq(q.field("isPersonal"), false),
-        q.eq(q.field("isPersonal"), undefined),
+      q.and(
+        q.or(
+          q.eq(q.field("isPersonal"), false),
+          q.eq(q.field("isPersonal"), undefined),
+        ),
+        q.eq(q.field("deletedAt"), undefined),
       ),
     )
     .first();
@@ -35,6 +38,7 @@ async function syncSecretsFromDev(
   const devSecrets = await ctx.db
     .query("secrets")
     .withIndex("by_environment", (q) => q.eq("environmentId", devEnv._id))
+    .filter((q) => q.eq(q.field("deletedAt"), undefined))
     .collect();
 
   for (const secret of devSecrets) {
@@ -72,6 +76,7 @@ export const list = query({
     const allEnvironments = await ctx.db
       .query("environments")
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     const userId = userResult.data._id;
@@ -111,7 +116,12 @@ export const ensurePersonalLocal = mutation({
       .withIndex("by_project_and_owner", (q) =>
         q.eq("projectId", args.projectId).eq("ownerId", userId),
       )
-      .filter((q) => q.eq(q.field("name"), "local"))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("name"), "local"),
+          q.eq(q.field("deletedAt"), undefined),
+        ),
+      )
       .first();
 
     if (existing) {
@@ -121,6 +131,7 @@ export const ensurePersonalLocal = mutation({
           .withIndex("by_environment", (q) =>
             q.eq("environmentId", existing._id),
           )
+          .filter((q) => q.eq(q.field("deletedAt"), undefined))
           .first();
 
         if (!existingSecrets) {
@@ -189,6 +200,7 @@ export const create = mutation({
     const environments = await ctx.db
       .query("environments")
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     const existing = environments.find(
@@ -240,7 +252,7 @@ export const update = mutation({
     if (isFailure(userResult)) return userResult;
 
     const environment = await ctx.db.get(args.id);
-    if (!environment) {
+    if (!environment || environment.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "env:not_found",
@@ -297,6 +309,7 @@ export const update = mutation({
         .withIndex("by_project", (q) =>
           q.eq("projectId", environment.projectId),
         )
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
         .collect();
 
       const existing = environments.find(
@@ -343,7 +356,7 @@ export const remove = mutation({
     if (isFailure(userResult)) return userResult;
 
     const environment = await ctx.db.get(args.id);
-    if (!environment) {
+    if (!environment || environment.deletedAt !== undefined) {
       return failure(
         HttpStatus.NOT_FOUND,
         "env:not_found",
@@ -379,13 +392,21 @@ export const remove = mutation({
     const secrets = await ctx.db
       .query("secrets")
       .withIndex("by_environment", (q) => q.eq("environmentId", args.id))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
+    const now = Date.now();
     for (const secret of secrets) {
-      await ctx.db.delete(secret._id);
+      await ctx.db.patch(secret._id, {
+        deletedAt: now,
+        updatedAt: now,
+      });
     }
 
-    await ctx.db.delete(args.id);
+    await ctx.db.patch(args.id, {
+      deletedAt: now,
+      updatedAt: now,
+    });
 
     return success({ deleted: true });
   },

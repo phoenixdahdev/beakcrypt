@@ -31,6 +31,7 @@ export default defineSchema({
     role: roles,
     createdAt: v.optional(v.number()),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_org", ["orgId"])
     .index("by_user", ["userId"])
@@ -64,6 +65,7 @@ export default defineSchema({
     updatedAt: v.number(),
     orgId: v.id("organizations"),
     createdAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
     githubRepoId: v.optional(v.number()),
     githubRepoUrl: v.optional(v.string()),
     githubRepoName: v.optional(v.string()),
@@ -79,6 +81,7 @@ export default defineSchema({
     updatedAt: v.number(),
     projectId: v.id("projects"),
     createdAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
     isPersonal: v.optional(v.boolean()),
     ownerId: v.optional(v.string()),
   })
@@ -93,6 +96,7 @@ export default defineSchema({
     updatedAt: v.number(),
     encryptedValue: v.string(),
     createdAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
     environmentId: v.id("environments"),
   })
     .index("by_key", ["key"])

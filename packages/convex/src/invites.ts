@@ -147,7 +147,7 @@ export const accept = mutation({
       )
       .first();
 
-    if (membership) {
+    if (membership && membership.deletedAt === undefined) {
       return failure(
         HttpStatus.CONFLICT,
         "invite:already_member",
@@ -155,13 +155,21 @@ export const accept = mutation({
       );
     }
 
-    await ctx.db.insert("organizationMembers", {
-      orgId: invite.orgId,
-      userId: user._id,
-      role: invite.role,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
+    if (membership) {
+      await ctx.db.patch(membership._id, {
+        role: invite.role,
+        deletedAt: undefined,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("organizationMembers", {
+        orgId: invite.orgId,
+        userId: user._id,
+        role: invite.role,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
 
     await ctx.db.patch(invite._id, {
       status: "accepted",
