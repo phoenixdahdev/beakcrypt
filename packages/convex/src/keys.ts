@@ -333,6 +333,7 @@ export const getMyKey = query({
           .eq("userId", userResult.data._id)
           .eq("publicKey", args.publicKey),
       )
+      .filter((q) => q.neq(q.field("status"), "revoked"))
       .take(2);
 
     if (matches.length > 1) {
