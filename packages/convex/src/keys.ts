@@ -136,6 +136,7 @@ export const registerKey = mutation({
         .withIndex("by_org_and_user", (q) =>
           q.eq("orgId", args.orgId).eq("userId", user._id),
         )
+        .filter((q) => q.neq(q.field("status"), "revoked"))
         .collect();
 
       const otherKeys = existingKeys.filter((k) => k._id !== keyId);
@@ -522,6 +523,7 @@ export const listMySessions = query({
       .withIndex("by_org_and_user", (q) =>
         q.eq("orgId", args.orgId).eq("userId", userResult.data._id),
       )
+      .filter((q) => q.neq(q.field("status"), "revoked"))
       .collect();
 
     return success(keys);
@@ -610,6 +612,14 @@ export const updateKeySessionToken = mutation({
         HttpStatus.FORBIDDEN,
         "key:not_owner",
         "You can only update your own keys",
+      );
+    }
+
+    if (key.status === "revoked") {
+      return failure(
+        HttpStatus.BAD_REQUEST,
+        "key:already_revoked",
+        "Cannot update a revoked key",
       );
     }
 
