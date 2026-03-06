@@ -31,6 +31,7 @@ export default defineSchema({
     role: roles,
     createdAt: v.optional(v.number()),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_org", ["orgId"])
     .index("by_user", ["userId"])

@@ -135,6 +135,7 @@ export const list = query({
     const memberships = await ctx.db
       .query("organizationMembers")
       .withIndex("by_user", (q) => q.eq("userId", userResult.data._id))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .collect();
 
     const orgs = await Promise.all(

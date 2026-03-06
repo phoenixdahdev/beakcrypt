@@ -37,6 +37,7 @@ async function checkMembership(
     .withIndex("by_org_and_user", (q) =>
       q.eq("orgId", orgId).eq("userId", userId),
     )
+    .filter((q) => q.eq(q.field("deletedAt"), undefined))
     .first();
 
   if (!membership) {
