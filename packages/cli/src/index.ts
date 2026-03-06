@@ -20,12 +20,13 @@ import { projectCreateCommand } from "./commands/project/create";
 import { projectRemoveCommand } from "./commands/project/remove";
 import { interactiveMode } from "./interactive-mode";
 
+declare const VERSION: string;
 const program = new Command();
 
 program
   .name("beakcrypt")
   .description("Secure environment variable management with E2E encryption")
-  .version("0.1.0")
+  .version(VERSION, "-v, --version")
   .action(async () => {
     try {
       await interactiveMode();

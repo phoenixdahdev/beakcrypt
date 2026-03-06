@@ -1,4 +1,7 @@
 import { defineConfig } from "tsup";
+import { readFileSync } from "fs";
+
+const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 
 export default defineConfig({
   entry: { index: "src/index.ts" },
@@ -14,5 +17,8 @@ export default defineConfig({
   noExternal: ["@beakcrypt/convex", "@beakcrypt/shared", "@beakcrypt/crypto"],
   banner: {
     js: "#!/usr/bin/env node",
+  },
+  define: {
+    VERSION: JSON.stringify(pkg.version),
   },
 });
