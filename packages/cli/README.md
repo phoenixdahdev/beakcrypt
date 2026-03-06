@@ -115,7 +115,7 @@ beakcrypt project create <name>         Create a new project
 beakcrypt project remove <name>         Delete a project and all its data
 ```
 
-All `project` subcommands require `-o, --org <slug>`.  
+All `project` subcommands accept `-o, --org <slug>` (defaults to the linked project's organization).  
 `project remove` also accepts `-y, --yes` to skip the confirmation prompt.
 
 ## Examples
