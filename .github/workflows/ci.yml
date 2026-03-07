@@ -92,3 +92,5 @@ jobs:
 
       - name: Run Build
         run: pnpm build
+        env:
+          CONVEX_SITE_URL: https://example.convex.site
