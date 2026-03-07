@@ -3,6 +3,7 @@
   "compilerOptions": {
     "paths": {
       "~/*": ["./src/*"],
+      "@beakcrypt/ui/globals.css": ["../../packages/ui/src/styles/globals.css"],
       "@beakcrypt/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [

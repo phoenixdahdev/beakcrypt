@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-
   "scripts": {
     "lint": "eslint .",
     "build": "next build",
@@ -11,7 +10,7 @@
     "lint:fix": "eslint --fix .",
     "postinstall": "fumadocs-mdx",
     "dev": "next dev --port 3001",
-    "types:check": "fumadocs-mdx && next typegen && tsgo --pretty --noEmit"
+    "typecheck": "fumadocs-mdx && SKIP_ENV_VALIDATION=1 next typegen && tsgo --pretty --noEmit"
   },
   "dependencies": {
     "@vercel/microfrontends": "^2.3.1",
