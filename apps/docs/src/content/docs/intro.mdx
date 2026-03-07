@@ -1,0 +1,147 @@
+---
+title: Introduction
+description: Beakcrypt is the open-source, end-to-end encrypted vault for environment variables — managed with a CLI that fits into the workflow you already use.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+## What is Beakcrypt?
+
+Tired of pasting `.env` files into Slack? Sending secrets over email? **Beakcrypt** gives your team a shared, end-to-end encrypted vault for environment variables — managed with a CLI that fits into the workflow you already use.
+
+Every secret is encrypted on your machine **before it ever leaves it**. Beakcrypt's servers only ever store ciphertext — we are cryptographically incapable of reading your secrets.
+
+### Core principles
+
+| | |
+|---|---|
+| 🔒 **End-to-end encrypted** | Secrets are encrypted on your device using AES-256-GCM before upload. The server never sees plaintext values. |
+| 🤝 **Team vaults** | Invite teammates and manage access per project. Each member holds an RSA-4096 key pair — the org key is wrapped individually for every member. |
+| ⚡ **CLI-first** | Push and pull `.env` files in seconds. Inject secrets directly into any process with `beakcrypt run`. |
+| 🌍 **Fully open-source** | Audit every line, self-host if you want, and contribute freely under the MIT license. |
+
+---
+
+## How the encryption works
+
+Beakcrypt's security model is built on two layers of cryptography, both implemented using the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) — no third-party crypto libraries.
+
+```
+Your machine                        Beakcrypt servers
+────────────────────────────────    ──────────────────────────────
+  RSA-4096 key pair (per user)
+  └─ private key  ← stays local
+  └─ public key   ──────────────→   stored (used to wrap org key)
+
+  AES-256-GCM org key (per org)
+  └─ wrapped with your RSA pubkey ─→ stored as wrapped key blob
+  └─ used to encrypt each secret ──→ ciphertext stored
+
+  Decryption flow
+  └─ fetch wrapped org key
+  └─ unwrap with your RSA private key (local)
+  └─ decrypt secret with org key (local)    ✓
+```
+
+**In practice, this means:**
+
+- The org key is wrapped with each member's RSA public key. Only someone whose private key is on their own machine can unwrap it.
+- Every secret value is encrypted with the org key using AES-256-GCM with a random 12-byte IV.
+- Revoking a team member's access removes their wrapped key copy — no re-encryption of all secrets needed.
+
+<Callout type="info">
+  All cryptographic operations use the native **Web Crypto API** (RSA-OAEP with SHA-256 for key wrapping; AES-GCM for secret encryption). No third-party crypto library is bundled.
+</Callout>
+
+---
+
+## Installation
+
+Install the CLI globally from npm. Node.js 20 or later is required.
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">
+    ```bash
+    npm install -g beakcrypt
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add -g beakcrypt
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn global add beakcrypt
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bun add -g beakcrypt
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Quick start
+
+<Steps>
+  <Step>
+    ### Log in
+
+    Authenticate with your GitHub account. On first login, an RSA-4096 key pair is generated locally and your public key is registered. Your private key **never leaves your machine**.
+
+    ```bash
+    beakcrypt login
+    ```
+  </Step>
+
+  <Step>
+    ### Link your project
+
+    Run this from your project's root directory. You'll be prompted to select an organization, project, and environment.
+
+    ```bash
+    beakcrypt link
+    ```
+  </Step>
+
+  <Step>
+    ### Push your secrets
+
+    Encrypts your local `.env.local` on-device and uploads the ciphertext.
+
+    ```bash
+    beakcrypt push
+    ```
+  </Step>
+
+  <Step>
+    ### Pull on another machine
+
+    Teammates can pull the same secrets after being invited to the organization.
+
+    ```bash
+    beakcrypt pull
+    ```
+  </Step>
+
+  <Step>
+    ### Inject secrets into any process
+
+    Skip the `.env` file entirely — pipe secrets directly into any command as environment variables.
+
+    ```bash
+    beakcrypt run -- npm run dev
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Contributing
+
+Beakcrypt is fully open-source under the MIT License — contributions are welcome. See the [GitHub repository](https://github.com/prudentbird/beakcrypt) to get started.
