@@ -13,7 +13,13 @@ export default function Layout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <body>
-        <RootProvider>
+        <RootProvider
+          search={{
+            options: {
+              api: "/docs/api/search",
+            },
+          }}
+        >
           <DocsLayout tree={source.getPageTree()} {...baseOptions()}>
             {children}
           </DocsLayout>
