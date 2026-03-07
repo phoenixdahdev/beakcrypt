@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
 import type * as authServer from "../authServer.js";
+import type * as deploymentHooks from "../deploymentHooks.js";
 import type * as environments from "../environments.js";
 import type * as github from "../github.js";
 import type * as http from "../http.js";
@@ -21,6 +22,7 @@ import type * as members from "../members.js";
 import type * as migrations from "../migrations.js";
 import type * as organizations from "../organizations.js";
 import type * as projects from "../projects.js";
+import type * as providersVercel from "../providers/vercel.js";
 import type * as secrets from "../secrets.js";
 import type * as waitlists from "../waitlists.js";
 
@@ -34,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authHelpers: typeof authHelpers;
   authServer: typeof authServer;
+  deploymentHooks: typeof deploymentHooks;
   environments: typeof environments;
   github: typeof github;
   http: typeof http;
@@ -44,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   organizations: typeof organizations;
   projects: typeof projects;
+  "providers/vercel": typeof providersVercel;
   secrets: typeof secrets;
   waitlists: typeof waitlists;
 }>;

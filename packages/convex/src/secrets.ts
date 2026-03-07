@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { query, mutation } from "./_generated/server";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import {
   Result,
   success,
@@ -307,6 +308,9 @@ export const bulkCreate = mutation({
       }),
     ),
     overwrite: v.optional(v.boolean()),
+    decryptedSecrets: v.optional(
+      v.array(v.object({ key: v.string(), value: v.string() })),
+    ),
   },
   handler: async (ctx, args): Promise<Result<BulkCreateResult>> => {
     const access = await requireEnvWriteAccess(ctx, args.environmentId);
@@ -347,6 +351,31 @@ export const bulkCreate = mutation({
           updatedAt: Date.now(),
         });
         results.created++;
+      }
+    }
+
+    // Fire deployment hooks if decrypted secrets were provided
+    if (
+      args.decryptedSecrets &&
+      args.decryptedSecrets.length > 0 &&
+      (results.created > 0 || results.updated > 0)
+    ) {
+      const hooks = await ctx.db
+        .query("deploymentHooks")
+        .withIndex("by_environment", (q) =>
+          q.eq("environmentId", args.environmentId),
+        )
+        .collect();
+
+      for (const hook of hooks) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.providers.vercel.syncToVercel,
+          {
+            hookId: hook._id,
+            decryptedSecrets: args.decryptedSecrets,
+          },
+        );
       }
     }
 

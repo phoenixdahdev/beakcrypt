@@ -122,4 +122,24 @@ export default defineSchema({
     .index("by_org_and_user", ["orgId", "userId"])
     .index("by_org_and_status", ["orgId", "status"])
     .index("by_org_user_publicKey", ["orgId", "userId", "publicKey"]),
+
+  deploymentHooks: defineTable({
+    projectId: v.id("projects"),
+    environmentId: v.id("environments"),
+    provider: v.literal("vercel"),
+    providerProjectId: v.string(),
+    providerTeamId: v.optional(v.string()),
+    vercelApiToken: v.string(),
+    targetEnvironment: v.union(
+      v.literal("production"),
+      v.literal("preview"),
+      v.literal("development"),
+    ),
+    triggerRedeploy: v.boolean(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_environment", ["environmentId"]),
 });
