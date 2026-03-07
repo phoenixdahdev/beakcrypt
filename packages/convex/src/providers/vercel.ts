@@ -12,12 +12,19 @@ type VercelEnvVarResponse = {
   type: string;
 };
 
+type VercelDeployment = {
+  uid: string;
+  name: string;
+  target: string | null;
+};
+
 type SyncResult = {
   hookId: string;
   provider: "vercel";
   upserted: number;
   redeployTriggered: boolean;
   error?: string;
+  redeployError?: string;
 };
 
 export const syncToVercel = internalAction({
@@ -49,8 +56,8 @@ export const syncToVercel = internalAction({
     } = hook;
 
     const teamParam = providerTeamId ? `teamId=${providerTeamId}` : "";
-    const qs = (extraParam?: string) => {
-      const parts = [teamParam, extraParam].filter(Boolean).join("&");
+    const qs = (...extra: string[]) => {
+      const parts = [teamParam, ...extra].filter(Boolean).join("&");
       return parts ? `?${parts}` : "";
     };
 
@@ -62,6 +69,7 @@ export const syncToVercel = internalAction({
 
     // Fetch existing env vars for the project
     let existingEnvVars: VercelEnvVarResponse[] = [];
+    let listError: string | undefined;
     try {
       const listUrl = `${baseUrl}/v9/projects/${encodeURIComponent(providerProjectId)}/env${qs()}`;
       const listRes = await fetch(listUrl, { headers });
@@ -70,9 +78,14 @@ export const syncToVercel = internalAction({
           envs?: VercelEnvVarResponse[];
         };
         existingEnvVars = data.envs ?? [];
+      } else {
+        const errText = await listRes.text();
+        listError = `Failed to list existing env vars (${listRes.status}): ${errText}`;
+        console.error("[syncToVercel] list env vars failed:", listError);
       }
-    } catch {
-      // proceed without existing vars — will create all
+    } catch (err) {
+      listError = `Failed to list existing env vars: ${String(err)}`;
+      console.error("[syncToVercel] list env vars exception:", listError);
     }
 
     const existingByKey = new Map<string, VercelEnvVarResponse>();
@@ -84,53 +97,133 @@ export const syncToVercel = internalAction({
 
     let upserted = 0;
 
+    // Separate secrets into creates and updates
+    const toCreate: typeof args.decryptedSecrets = [];
+    const toUpdate: Array<{
+      id: string;
+      key: string;
+      value: string;
+    }> = [];
+
     for (const secret of args.decryptedSecrets) {
       const existing = existingByKey.get(secret.key);
-
       if (existing) {
-        const patchUrl = `${baseUrl}/v9/projects/${encodeURIComponent(providerProjectId)}/env/${existing.id}${qs()}`;
+        toUpdate.push({
+          id: existing.id,
+          key: secret.key,
+          value: secret.value,
+        });
+      } else {
+        toCreate.push(secret);
+      }
+    }
+
+    // Batch create new secrets (Vercel supports array POST for v10)
+    if (toCreate.length > 0) {
+      try {
+        const createUrl = `${baseUrl}/v10/projects/${encodeURIComponent(providerProjectId)}/env${qs()}`;
+        const body = toCreate.map((s) => ({
+          key: s.key,
+          value: s.value,
+          target: [targetEnvironment],
+          type: "encrypted",
+        }));
+        const createRes = await fetch(createUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        });
+        if (createRes.ok) {
+          upserted += toCreate.length;
+        } else {
+          const errText = await createRes.text();
+          console.error(
+            "[syncToVercel] batch create failed:",
+            createRes.status,
+            errText,
+          );
+        }
+      } catch (err) {
+        console.error("[syncToVercel] batch create exception:", String(err));
+      }
+    }
+
+    // Update existing secrets one-by-one (PATCH does not support batching)
+    for (const { id, value } of toUpdate) {
+      try {
+        const patchUrl = `${baseUrl}/v9/projects/${encodeURIComponent(providerProjectId)}/env/${id}${qs()}`;
         const patchRes = await fetch(patchUrl, {
           method: "PATCH",
           headers,
           body: JSON.stringify({
-            value: secret.value,
+            value,
             target: [targetEnvironment],
             type: "encrypted",
           }),
         });
-        if (patchRes.ok) upserted++;
-      } else {
-        const createUrl = `${baseUrl}/v10/projects/${encodeURIComponent(providerProjectId)}/env${qs()}`;
-        const createRes = await fetch(createUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            key: secret.key,
-            value: secret.value,
-            target: [targetEnvironment],
-            type: "encrypted",
-          }),
-        });
-        if (createRes.ok) upserted++;
+        if (patchRes.ok) {
+          upserted++;
+        } else {
+          const errText = await patchRes.text();
+          console.error(
+            "[syncToVercel] patch env var failed:",
+            patchRes.status,
+            errText,
+          );
+        }
+      } catch (err) {
+        console.error("[syncToVercel] patch env var exception:", String(err));
       }
     }
 
     let redeployTriggered = false;
+    let redeployError: string | undefined;
 
     if (triggerRedeploy) {
       try {
-        const deployUrl = `${baseUrl}/v13/deployments${qs()}`;
-        const deployRes = await fetch(deployUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            name: providerProjectId,
-            target: targetEnvironment,
-          }),
-        });
-        redeployTriggered = deployRes.ok;
-      } catch {
-        // non-fatal
+        // Fetch the latest deployment for the target environment to get its ID
+        const listDeployUrl = `${baseUrl}/v6/deployments${qs(`projectId=${encodeURIComponent(providerProjectId)}`, `target=${targetEnvironment}`, "limit=1", "state=READY")}`;
+        const listDeployRes = await fetch(listDeployUrl, { headers });
+
+        if (listDeployRes.ok) {
+          const listDeployData = (await listDeployRes.json()) as {
+            deployments: VercelDeployment[];
+          };
+          const latestDeployment = listDeployData.deployments?.[0];
+
+          if (latestDeployment?.uid) {
+            const redeployUrl = `${baseUrl}/v13/deployments${qs()}`;
+            const redeployRes = await fetch(redeployUrl, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                deploymentId: latestDeployment.uid,
+                name: latestDeployment.name,
+                target: targetEnvironment,
+              }),
+            });
+            if (redeployRes.ok) {
+              redeployTriggered = true;
+            } else {
+              const errText = await redeployRes.text();
+              redeployError = `Redeploy failed (${redeployRes.status}): ${errText}`;
+              console.error("[syncToVercel] redeploy failed:", redeployError);
+            }
+          } else {
+            redeployError = `No existing deployment found for target "${targetEnvironment}"`;
+            console.warn("[syncToVercel]", redeployError);
+          }
+        } else {
+          const errText = await listDeployRes.text();
+          redeployError = `Failed to list deployments (${listDeployRes.status}): ${errText}`;
+          console.error(
+            "[syncToVercel] list deployments failed:",
+            redeployError,
+          );
+        }
+      } catch (err) {
+        redeployError = `Redeploy exception: ${String(err)}`;
+        console.error("[syncToVercel] redeploy exception:", redeployError);
       }
     }
 
@@ -139,6 +232,8 @@ export const syncToVercel = internalAction({
       provider: "vercel",
       upserted,
       redeployTriggered,
+      ...(listError && { error: listError }),
+      ...(redeployError && { redeployError }),
     };
   },
 });
