@@ -1,4 +1,4 @@
-import "./global.css";
+import "./globals.css";
 import { Inter } from "next/font/google";
 import { source } from "~/lib/source";
 import { baseOptions } from "~/lib/layout.shared";
@@ -13,7 +13,13 @@ export default function Layout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <body>
-        <RootProvider>
+        <RootProvider
+          search={{
+            options: {
+              api: "/docs/api/search",
+            },
+          }}
+        >
           <DocsLayout tree={source.getPageTree()} {...baseOptions()}>
             {children}
           </DocsLayout>
