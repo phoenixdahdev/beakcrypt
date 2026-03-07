@@ -1,4 +1,4 @@
-import "./global.css";
+import "./globals.css";
 import { Inter } from "next/font/google";
 import { source } from "~/lib/source";
 import { baseOptions } from "~/lib/layout.shared";
